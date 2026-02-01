@@ -6,6 +6,9 @@ import com.ecommerce.productservice.model.Product;
 import com.ecommerce.productservice.repository.CategoryRepository;
 import com.ecommerce.productservice.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +22,7 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @CacheEvict(value = "products", allEntries = true)
     public Product createProduct(ProductDTO productDTO) {
         Product product = new Product();
         product.setProductName(productDTO.getProductName());
@@ -38,6 +42,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @CachePut(value = "products", key = "#productId")
     public Product updateProduct(ProductDTO productDTO, Integer productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -61,15 +66,18 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @Cacheable(value = "products", key = "#productId")
     public Product getProductById(Integer productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
+    @Cacheable(value = "products")
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
+    @CacheEvict(value = "products", key = "#productId")
     public void deleteProduct(Integer productId) {
         productRepository.deleteById(productId);
     }
@@ -79,12 +87,14 @@ public class ProductService {
         return product.getQuantity() >= quantity;
     }
 
+    @CachePut(value = "products", key = "#productId")
     public void updateStock(Integer productId, Integer quantity) {
         Product product = getProductById(productId);
         product.setQuantity(product.getQuantity() - quantity);
         productRepository.save(product);
     }
 
+    @CachePut(value = "products", key = "#productId")
     public void restoreStock(Integer productId, Integer quantity) {
         Product product = getProductById(productId);
         product.setQuantity(product.getQuantity() + quantity);
